@@ -1166,6 +1166,21 @@ window.addEventListener('load', async () => {
   window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
 
+  // ── SETUP VIA URL HASH (#setup=BASE64) ──
+  const _hash = window.location.hash;
+  if (_hash.startsWith('#setup=')) {
+    try {
+      const _enc = _hash.substring(7);
+      const _json = JSON.parse(decodeURIComponent(escape(atob(_enc))));
+      if (_json.access_token) {
+        localStorage.setItem('cetrus_itops_token', _json.access_token);
+        if (_json.refresh_token) localStorage.setItem('cetrus_itops_refresh', _json.refresh_token);
+        window.location.hash = ''; // limpa hash da URL
+        console.log('✅ Token aplicado via QR Code!');
+      }
+    } catch(e) { console.warn('Hash setup inválido:', e); }
+  }
+
   await startApp();
 
   // Chips clicáveis
