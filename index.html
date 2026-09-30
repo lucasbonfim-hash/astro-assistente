@@ -297,6 +297,30 @@ html, body {
 .hints {
   display: flex; flex-wrap: wrap; gap: 5px; justify-content: center;
 }
+
+/* ── FILTROS RÁPIDOS ── */
+.filtros-bar {
+  display: flex; gap: 7px; overflow-x: auto; flex-shrink: 0;
+  padding: 0 2px 8px; scrollbar-width: none;
+}
+.filtros-bar::-webkit-scrollbar { display: none; }
+.filtro-pill {
+  display: flex; align-items: center; gap: 5px; white-space: nowrap;
+  padding: 7px 13px; border-radius: 20px; flex-shrink: 0;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  border: 1.5px solid; transition: all .15s;
+  -webkit-tap-highlight-color: transparent; user-select: none;
+}
+.filtro-pill.phantom {
+  background: rgba(239,68,68,.15); border-color: rgba(239,68,68,.4); color: #fca5a5;
+}
+.filtro-pill.tx {
+  background: rgba(251,191,36,.12); border-color: rgba(251,191,36,.4); color: #fde68a;
+}
+.filtro-pill.it {
+  background: rgba(79,110,247,.15); border-color: rgba(79,110,247,.45); color: #a5b4fc;
+}
+.filtro-pill:active { opacity: .7; transform: scale(.97); }
 .hint {
   background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08);
   border-radius: 16px; padding: 4px 10px; font-size: 10px; color: rgba(255,255,255,.3);
@@ -360,6 +384,18 @@ html, body {
   </div>
 
   <div class="day-strip" id="day-strip"></div>
+
+  <!-- Filtros Rápidos do Mês -->
+  <div class="filtros-bar" id="filtros-bar">
+    <button class="filtro-pill phantom" onclick="filtroMes('phantom')">🔴 PHANTOM</button>
+    <button class="filtro-pill tx" onclick="filtroMes('transmissao')">📡 Transmissão</button>
+    <button class="filtro-pill it" onclick="filtroMes('notebook')">💻 Notebooks</button>
+    <button class="filtro-pill it" onclick="filtroMes('camera')">📷 Câmera e Tripé</button>
+    <button class="filtro-pill it" onclick="filtroMes('tv extra')">📺 TV Extra</button>
+    <button class="filtro-pill it" onclick="filtroMes('microfone')">🎤 Microfone</button>
+    <button class="filtro-pill it" onclick="filtroMes('monitor')">🖥️ Monitor</button>
+    <button class="filtro-pill it" onclick="filtroMes('simman')">🤖 SimMan</button>
+  </div>
 
   <div class="painel" id="painel">
     <div class="painel-loading">Conectando ao Octopus...</div>
@@ -728,6 +764,30 @@ function getMonthDates() {
   return dates;
 }
 
+function filtroMes(tipo) {
+  const mesNome = new Date(window.viewMonth.year, window.viewMonth.month, 1)
+    .toLocaleDateString('pt-BR', { month: 'long' });
+  if (!monthLoaded) {
+    speak('Carregando dados de ' + mesNome + ', aguarde alguns segundos.');
+    loadMonth().then(() => filtroMes(tipo));
+    return;
+  }
+  // Build a synthetic query and call buildAnswerMonth
+  const queries = {
+    'phantom':      'phantom esse mes',
+    'transmissao':  'transmissoes esse mes',
+    'notebook':     'notebooks esse mes',
+    'camera':       'camera esse mes',
+    'tv extra':     'tv extra esse mes',
+    'microfone':    'microfone esse mes',
+    'monitor':      'monitor esse mes',
+    'simman':       'simman esse mes',
+  };
+  const q = queries[tipo] || (tipo + ' esse mes');
+  const answer = buildAnswerMonth(q);
+  speak(answer);
+}
+
 function buildDayStrip() {
   const strip = document.getElementById('day-strip');
   if (!strip) return;
@@ -854,7 +914,7 @@ function buildAnswerMonth(query) {
   if (!monthLoaded) return 'Ainda carregando os dados do mês, aguarde um momento e tente novamente.';
 
   const q = query.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
-  const monthName = new Date().toLocaleDateString('pt-BR', { month: 'long' });
+  const monthName = new Date(window.viewMonth.year, window.viewMonth.month, 1).toLocaleDateString('pt-BR', { month: 'long' });
   const dates = getMonthDates();
 
   // Monta lista flat de todos os eventos do mês com referência ao data-day
