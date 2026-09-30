@@ -993,7 +993,7 @@ function buildAnswerMonth(query) {
     if (kws.some(kw => q.includes(kw))) {
       const items = agruparRecurso(e => {
         const recs = e._day.itMap[e.aula_id] || [];
-        return recs.some(r => kws.some(kw => r.toLowerCase().includes(kw.trim())));
+        return recs.some(r => kws.some(kw => r.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').includes(kw.trim())));
       });
       if (!items.length) return `Nenhum curso precisa de ${nomeRec} em ${monthName}.`;
       showMonthResults(`💻 ${nomeRec} — ${monthName}`, items, 'it');
