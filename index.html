@@ -319,6 +319,11 @@ html, body {
     <span class="logo">Astro · Assistente</span>
     <span class="date-chip" id="date-chip">—</span>
   </div>
+  <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:6px;">
+    <button onclick="changeViewMonth(-1)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">‹</button>
+    <span id="month-chip" style="font-size:13px;color:rgba(255,255,255,.6);letter-spacing:.5px;text-transform:capitalize;min-width:130px;text-align:center;"></span>
+    <button onclick="changeViewMonth(1)" style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:50%;width:28px;height:28px;color:rgba(255,255,255,.7);font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center;line-height:1;">›</button>
+  </div>
 
   <div class="tabs" id="tabs">
     <button class="tab active" onclick="setTab('todos')">Todos</button>
@@ -676,13 +681,47 @@ function renderPainel(data) {
 // ═══════════════════════════════════════════════════════
 let monthLoaded = false;
 
-function getMonthDates() {
+// ── MÊS SELECIONADO (navega com ← →) ──
+// Padrão: próximo mês se estivermos nos últimos 3 dias do mês atual
+(function initViewMonth() {
   const t = new Date();
-  const y = t.getFullYear(), m = t.getMonth();
+  const lastDay = new Date(t.getFullYear(), t.getMonth() + 1, 0).getDate();
+  if (t.getDate() >= lastDay - 2) {
+    // Últimos 3 dias do mês → padrão é o próximo mês
+    const next = new Date(t.getFullYear(), t.getMonth() + 1, 1);
+    window.viewMonth = { year: next.getFullYear(), month: next.getMonth() };
+  } else {
+    window.viewMonth = { year: t.getFullYear(), month: t.getMonth() };
+  }
+})();
+
+function getMonthDates() {
+  const y = window.viewMonth.year, m = window.viewMonth.month;
   const days = new Date(y, m + 1, 0).getDate();
   const dates = [];
   for (let d = 1; d <= days; d++) dates.push(toISO(new Date(y, m, d)));
   return dates;
+}
+
+function getViewMonthLabel() {
+  const d = new Date(window.viewMonth.year, window.viewMonth.month, 1);
+  return d.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
+}
+
+function changeViewMonth(delta) {
+  const d = new Date(window.viewMonth.year, window.viewMonth.month + delta, 1);
+  window.viewMonth = { year: d.getFullYear(), month: d.getMonth() };
+  monthLoaded = false;
+  updateMonthChip();
+  loadMonth();
+  const label = getViewMonthLabel();
+  setStatus('Carregando ' + label + '...');
+  speak('Carregando dados de ' + label);
+}
+
+function updateMonthChip() {
+  const el = document.getElementById('month-chip');
+  if (el) el.textContent = getViewMonthLabel();
 }
 
 async function loadMonth() {
@@ -1013,7 +1052,7 @@ async function processQuery(query) {
   const q = query.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
   // ── MÊS INTEIRO ──
-  const mesAtual = new Date().toLocaleDateString('pt-BR', { month: 'long' }).toLowerCase();
+  const mesAtual = new Date(window.viewMonth.year, window.viewMonth.month, 1).toLocaleDateString('pt-BR', { month: 'long' }).toLowerCase();
   const isMesQuery = q.includes('esse mes') || q.includes('este mes') || q.includes('mes inteiro')
     || q.includes('mes todo') || q.includes('o mes') || q.includes(mesAtual);
   if (isMesQuery) {
@@ -1162,6 +1201,7 @@ async function startApp() {
 window.addEventListener('load', async () => {
   document.getElementById('date-chip').textContent =
     new Date().toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+  updateMonthChip();
 
   window.speechSynthesis.getVoices();
   window.speechSynthesis.onvoiceschanged = () => window.speechSynthesis.getVoices();
