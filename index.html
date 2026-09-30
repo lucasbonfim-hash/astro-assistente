@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
+<metha charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
 <title>Astro · Assistente</title>
 <style>
@@ -553,8 +553,8 @@ async function fetchDay(dateStr) {
   const itMap = {};
   if (ids) {
     const [pR, tR, iR] = await Promise.all([
-      fetch(`${SUPA}/rest/v1/solicitacoes_procedimentos?select=aula_id&aula_id=in.(${ids})&tipo_recurso=eq.PHANTOM`, {headers:hdrs()}),
-      fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id&aula_id=in.(${ids})&tipo_chamado=eq.TRANSMISSAO`, {headers:hdrs()}),
+      fetch(`${SUPA}/rest/v1/solicitacoes_procedimentos?select=aula_id&aula_id=in.(${ids})`, {headers:hdrs()}),
+      fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id&aula_id=in.(${ids})`, {headers:hdrs()}),
       // Todos os recursos IT (setor_id=1 = ITOPS), exceto TRANSMISSAO
       fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id,titulo&aula_id=in.(${ids})`, {headers:hdrs()})
     ]);
@@ -562,11 +562,11 @@ async function fetchDay(dateStr) {
     const _t = JSON.parse(await tR.text());
     const _i = JSON.parse(await iR.text());
     if (Array.isArray(_p)) _p.forEach(x => phantomIds.add(x.aula_id));
-    if (Array.isArray(_t)) _t.forEach(x => txIds.add(x.aula_id));
+    // TX detection via titulo na query abaixo
     if (Array.isArray(_i)) _i.forEach(x => {
       const titulo = (x.titulo || '').toLowerCase();
       // Ignora recursos de transmissão
-      if (titulo.includes('transmiss')) return;
+      if (titulo.includes('transmiss')) { txIds.add(x.aula_id); return; }
       itIds.add(x.aula_id);
       if (!itMap[x.aula_id]) itMap[x.aula_id] = [];
       itMap[x.aula_id].push(x.titulo || 'Recurso IT');
