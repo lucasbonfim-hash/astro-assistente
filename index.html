@@ -554,22 +554,22 @@ async function fetchDay(dateStr) {
   if (ids) {
     const [pR, tR, iR] = await Promise.all([
       fetch(`${SUPA}/rest/v1/solicitacoes_procedimentos?select=aula_id&aula_id=in.(${ids})`, {headers:hdrs()}),
-      fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id&aula_id=in.(${ids})`, {headers:hdrs()}),
+      fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id&tipo_chamado=eq.TRANSMISSAO&aula_id=in.(${ids})`, {headers:hdrs()}),
       // Todos os recursos IT (setor_id=1 = ITOPS), exceto TRANSMISSAO
-      fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id,titulo&aula_id=in.(${ids})`, {headers:hdrs()})
+      fetch(`${SUPA}/rest/v1/solicitacoes_recursos?select=aula_id,catalogo_recursos(nome)&tipo_chamado=eq.RECURSO&aula_id=in.(${ids})`, {headers:hdrs()})
     ]);
     const _p = JSON.parse(await pR.text());
     const _t = JSON.parse(await tR.text());
     const _i = JSON.parse(await iR.text());
     if (Array.isArray(_p)) _p.forEach(x => phantomIds.add(x.aula_id));
-    // TX detection via titulo na query abaixo
+    if (Array.isArray(_t)) _t.forEach(x => txIds.add(x.aula_id));
     if (Array.isArray(_i)) _i.forEach(x => {
-      const titulo = (x.titulo || '').toLowerCase();
-      // Ignora recursos de transmissão
-      if (titulo.includes('transmiss')) { txIds.add(x.aula_id); return; }
+      const nome = (x.catalogo_recursos?.nome || '').toLowerCase();
+      if (!nome) return;
+      //
       itIds.add(x.aula_id);
       if (!itMap[x.aula_id]) itMap[x.aula_id] = [];
-      itMap[x.aula_id].push(x.titulo || 'Recurso IT');
+      itMap[x.aula_id].push(x.catalogo_recursos?.nome || 'Recurso IT');
     });
   }
 
